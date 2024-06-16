@@ -272,19 +272,25 @@ func (m *Manager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, 
 		return nil, errors.New("acme/autocert: server name contains invalid character")
 	}
 
+	println("GetCertificate - Name:", name)
+
 	// In the worst-case scenario, the timeout needs to account for caching, host policy,
 	// domain ownership verification and certificate issuance.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
+
+	println("GetCertificate - Hello:", hello.SupportedProtos, hello.ServerName)
 
 	// Check whether this is a token cert requested for TLS-ALPN challenge.
 	if wantsTokenCert(hello) {
 		m.challengeMu.RLock()
 		defer m.challengeMu.RUnlock()
 		if cert := m.certTokens[name]; cert != nil {
+			println("GetCertificate - Token cert:", name)
 			return cert, nil
 		}
 		if cert, err := m.cacheGet(ctx, certKey{domain: name, isToken: true}); err == nil {
+			println("GetCertificate - Cached token cert:", name)
 			return cert, nil
 		}
 		// TODO: cache error results?
@@ -674,6 +680,9 @@ func (m *Manager) authorizedCert(ctx context.Context, key crypto.Signer, ck cert
 	if err != nil {
 		return nil, nil, err
 	}
+
+	println("FinalizeURL:", o.FinalizeURL)
+
 	chain, _, err := client.CreateOrderCert(ctx, o.FinalizeURL, csr, true)
 	if err != nil {
 		return nil, nil, err
@@ -1168,7 +1177,7 @@ func validCert(ck certKey, der [][]byte, key crypto.Signer, now time.Time) (leaf
 }
 
 // https://community.letsencrypt.org/t/2022-01-25-issue-with-tls-alpn-01-validation-method/170450
-var letsEncryptFixDeployTime = time.Date(2022, time.January, 26, 00, 48, 0, 0, time.UTC)
+var letsEncryptFixDeployTime = time.Date(2022, time.January, 26, 0o0, 48, 0, 0, time.UTC)
 
 // isRevokedLetsEncrypt returns whether the certificate is likely to be part of
 // a batch of certificates revoked by Let's Encrypt in January 2022. This check
