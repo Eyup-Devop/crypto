@@ -279,7 +279,7 @@ func (m *Manager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	println("GetCertificate - Hello:", hello.SupportedProtos, hello.ServerName)
+	println("GetCertificate - Hello:", hello.SupportedProtos[0], hello.ServerName)
 
 	// Check whether this is a token cert requested for TLS-ALPN challenge.
 	if wantsTokenCert(hello) {
